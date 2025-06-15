@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import BaseLayout from "../layouts/BaseLayout.astro";
 import BlogTitle from "../components/BlogTitle.astro";
 import BlogPost from "../components/BlogPost.astro";
 
@@ -8,8 +9,14 @@ const blogs = await getCollection("blog");
 console.log(blogs);
 ---
 
-<div class="flex flex-col p-40 py-10 gap-7">
-    <BlogTitle title="Dinesh Adhithya's Blog" />
-    <hr />
-    {blogs.map((blog) => <BlogPost blog={blog} />)}
-</div>
+<BaseLayout title="Dinesh Adhithya's Blog">
+    <div
+        class="flex flex-col px-4 py-6 gap-6 max-w-4xl mx-auto sm:px-6 md:px-8 lg:px-12 xl:px-16"
+    >
+        <BlogTitle title="Dinesh Adhithya's Blog" />
+        <hr class="border-gray-300" />
+        <div class="flex flex-col gap-4">
+            {blogs.map((blog) => <BlogPost blog={blog} />)}
+        </div>
+    </div>
+</BaseLayout>

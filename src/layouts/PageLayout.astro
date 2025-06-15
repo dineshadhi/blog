@@ -1,11 +1,18 @@
 ---
 import BlogTitle from "../components/BlogTitle.astro";
+import BaseLayout from "./BaseLayout.astro";
 
 const { title } = Astro.props.frontmatter;
 ---
 
-<div class="flex flex-col p-40 py-10 gap-7">
-    <BlogTitle title={title} />
-    <hr />
-    <slot />
-</div>
+<BaseLayout title={title}>
+    <div
+        class="flex flex-col px-4 py-6 gap-6 max-w-4xl mx-auto sm:px-6 md:px-8 lg:px-12 xl:px-16"
+    >
+        <BlogTitle title={title} />
+        <hr class="border-gray-300" />
+        <div class="prose prose-lg max-w-none">
+            <slot />
+        </div>
+    </div>
+</BaseLayout>
