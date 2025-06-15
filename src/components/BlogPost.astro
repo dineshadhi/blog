@@ -3,10 +3,7 @@ import "../styles/global.css";
 const { id, data } = Astro.props.blog;
 ---
 
-<a
-    href={`/posts/${id}`}
-    class="block p-4 rounded-lg hover:bg-white/20 transition-colors duration-200 active:bg-white/30"
->
+<a href={`/posts/${id}`} class="block p-4 rounded-lg">
     <div class="flex flex-col gap-3">
         <h2
             class="text-lg sm:text-xl lg:text-2xl font-medium leading-tight break-words"
