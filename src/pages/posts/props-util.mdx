@@ -1,0 +1,87 @@
+---
+layout: '../../layouts/PageLayout.astro'
+title : "props-util - configs made easy"
+date : "14 Jun 2024"
+---
+
+
+import Linebreak from "../../components/Linebreak.astro";
+import Link from "../../components/Link.astro";
+
+At work, we were transitioning some of the Java based systems to Rust. One of the pain points in this transition was config management. Our deployment system only works with `.properties` files and don't support `.toml` or `.yaml` which is a huge blow for us because Rust crates work really well with these formats.
+
+So I started writing a library to parse `.properties` files in to a strongly typed `structs` in Rust. Thats when I was introduced to Rust's
+<Link href="https://doc.rust-lang.org/reference/procedural-macros.html" title="proc-macro"/> system. Oh boy, it did wonders. In short, it allowed me to write syntax extensions and dynamically generate code based on how the macros are configured.
+
+Let me explain.
+
+<Linebreak/>
+
+## **derive-macros - Simple Walkthrough**
+
+`derive-macros` simply let me slap `#derive[foo]` on any of my structs and ergonomically generate code on how my struct is `impl`ed . All I have to do is write `foo` proc-macro in a seperate crate and use it.
+
+```rust
+use foo::Foo;
+
+#[derive(Foo)] // Foo here is the proc-macro imported from the crate `foo`
+struct Bar {
+    ...
+}
+```
+
+In `foo` crate, I implement my `Foo` derived macro
+
+```rust
+#[proc_macro_derive(Properties, attributes(prop))] // attributes(prop) denotes I expect `prop` definitions for each struct field
+pub fn my_implementation_of_foo() {
+    ...
+}
+```
+
+then, set `proc-macro=true` in `cargo.toml` and you got yourself a `proc-macro` crate.
+
+```toml
+[lib]
+proc-macro = true
+```
+
+<Linebreak/>
+
+# **props-util**
+
+Why am I reinventing the wheel instead of using `Serde`? Please hear my rants
+
+<ul class="list-decimal">
+    <li>I did not find a crate that supports default values if the value is missing in the `.properties`file.</li>
+    <li>I cannot map the key-value in the file with the field name of the struct.</li>
+    <li>There was no way to use `Option` as one of the fields in the struct, which would be pretty cool to have.</li>
+    <li> No way to map the `env` variable to the field. </li>
+</ul>
+
+
+
+Ergo, **props-util**. It addresses every shortcoming that I listed. With this crate, a typical struct that derives `Properties` trait looks like this,
+
+``` rust
+#[derive(Properties, Debug)]
+struct Config {
+    #[prop(env = "SERVER_HOST", default = "localhost")]
+    host: String,
+
+    #[prop(key = "server.port", default = "8080")]
+    port: u16,
+
+    #[prop(key = "debug.enabled", default = "false")]
+    debug: bool,
+
+    #[prop(key = "ENCRYPTION_KEY")]
+    encryption_key: String,
+}
+```
+
+It has a mix of `env` and `key` attributes. The `env` attribute is used to map the environment variable to the field, while the `key` attribute is used to map the key-value in the file to the field. The `default` attribute is used to provide a default value if the value is missing in the file or environment variable.
+
+On top of this, you can convert between types that derives `Properties`through a <Link href="https://docs.rs/props-util/latest/props_util/index.html#converting-between-different-types" title="simple API"/>.
+
+You can find more information about the crate <Link href="https://docs.rs/props-util/latest/props_util/index.html" title="here"/>.

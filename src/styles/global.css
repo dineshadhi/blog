@@ -149,7 +149,7 @@ code {
     font-size: 0.875rem;
 }
 
-/* Mobile adjustments for prose */
+/* /* /* Mobile adjustments for prose */
 @media (max-width: 640px) {
     .prose h1 {
         font-size: 1.5rem; /* 24px */
