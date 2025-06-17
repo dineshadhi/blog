@@ -31,13 +31,6 @@ body {
         word-wrap: break-word;
     }
 
-    /* Ensure links are touch-friendly */
-    a {
-        min-height: 44px;
-        display: flex;
-        align-items: center;
-    }
-
     /* Prevent horizontal scrolling */
     body {
         overflow-x: hidden;
@@ -149,7 +142,7 @@ code {
     font-size: 0.875rem;
 }
 
-/* /* /* Mobile adjustments for prose */
+/* Mobile adjustments for prose */
 @media (max-width: 640px) {
     .prose h1 {
         font-size: 1.5rem; /* 24px */
