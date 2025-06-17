@@ -7,6 +7,7 @@ date : "14 Jun 2025"
 
 import Linebreak from "../../components/Linebreak.astro";
 import Link from "../../components/Link.astro";
+import List from "../../components/List.astro";
 
 At work, we were transitioning some of the Java based systems to Rust. One of the pain points in this transition was config management. Our deployment system only works with `.properties` files and don't support `.toml` or `.yaml` which is a huge blow for us because Rust crates work really well with these formats.
 
@@ -53,14 +54,12 @@ proc-macro = true
 
 Why am I reinventing the wheel instead of using `Serde`? Please hear my rants
 
-<ul class="list-decimal">
+<List>
     <li>I did not find a crate that supports default values if the value is missing in the `.properties`file.</li>
     <li>I cannot map the key-value in the file with the field name of the struct.</li>
     <li>There was no way to use `Option` as one of the fields in the struct, which would be pretty cool to have.</li>
     <li> No way to map the `env` variable to the field. </li>
-</ul>
-
-
+</List>
 
 Ergo, **props-util**. It addresses every shortcoming that I listed. With this crate, a typical struct that derives `Properties` trait looks like this,
 

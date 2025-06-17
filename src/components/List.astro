@@ -1,0 +1,9 @@
+---
+const { type = "list-decimal" } = Astro.props;
+---
+
+<div class="pl-4">
+    <ul class={type}>
+        <slot />
+    </ul>
+</div>
