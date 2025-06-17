@@ -33,7 +33,8 @@ struct Bar {
 In `foo` crate, I implement my `Foo` derived macro
 
 ```rust
-#[proc_macro_derive(Properties, attributes(prop))] // attributes(prop) denotes I expect `prop` definitions for each struct field
+// attributes(prop) denotes I expect `prop` definitions for each struct field
+#[proc_macro_derive(Properties, attributes(prop))]
 pub fn my_implementation_of_foo() {
     ...
 }
