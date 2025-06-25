@@ -3,9 +3,9 @@ import "../styles/global.css";
 const { id, data } = Astro.props.blog;
 ---
 
-<a href={`/posts/${id}`} class="block rounded-lg pt-2">
-    <div class="flex flex-col gap-2">
-        <h2 class="text-xl font-medium leading-tight break-words">
+<a href={`/posts/${id}`}>
+    <div class="text-xl flex flex-col gap-2">
+        <h2 class="leading-tight">
             {data.title}
         </h2>
         <p class="text-sm font-light text-gray-400">{data.date}</p>

@@ -1,0 +1,152 @@
+---
+layout: '../../layouts/PageLayout.astro'
+title : "Sans-IO - Async's divorce with Protocol"
+date : "22 Jun 2025"
+---
+
+import Linebreak from "../../components/Linebreak.astro";
+import Link from "../../components/Link.astro";
+import List from "../../components/List.astro";
+import Image from "../../components/Image.astro";
+
+When you clicked open this post, an HTTP request flew across the internet towards the machine serving this website. That machine actively listens on your connection by keeping tabs on a _FILE_.
+
+Yes, you read that right. Its literally a file that the machine is waiting on to read your request.
+
+<Image src="/sansio/allfiles.webp" width="600"/>
+
+It is referred to as _File Descriptor_ or _FD_.
+
+There are thousands of people concurrently reading this post probably. So, we have an FD for each user the machine needs to keep tabs on. You see, its impossible to predict which FD is active to be read and served.
+
+Sounds confusing? Let me throw an analogy.
+
+Imagine you are hosting a party at a hotel with ten doors. As the guest come in, you cannot go around each door one by one looking out to see if you have someone at the door. That's impractical.
+
+What do you do? You ask your guests to use the calling bell. Well, before that, you need to install a calling bell at each door.
+
+That's what we do with the FDs too. We register the FD with something called _Selector_ analogous to installing a calling bell on the door.
+The FDs will come knocking when they have something to say. Now you know the exact door to open to invite the guest in.
+
+<Linebreak/>
+
+## **So, what is a selector?**
+
+To put it bluntly, it is an abstraction offered by the OS that keeps track of all your FDs and its notifications. Each OS has their own flavour of Selector.
+<Link href="https://en.wikipedia.org/wiki/Epoll" title="epoll"/> for Linux. <Link href="https://en.wikipedia.org/wiki/Ioctl" title="ioctl"/> for Windows and <Link href="https://en.wikipedia.org/wiki/Kqueue" title="kqeue"/> for MacOS. I wish they all agreed on one and called it a day, but, here we are.
+
+I am going to respect your time and stick to Linux's version - **epoll**.
+
+You can ask an `epoll` to listen on a FD like this
+
+```c
+int FD = ... // Obtained through jihad for this example
+int epoll_fd = epoll_create1(0); // Create an epoll
+
+struct epoll_event event;
+event.events = EPOLLIN; // Monitor for incoming data/connections
+
+epoll_ctl(epoll_fd, EPOLL_CTL_ADD, FD, &event); // Install the calling bell
+```
+
+After this, you ask epoll which FDs are active, it gives you a list, you can now assign your threads for each of these FDs to read the data.
+
+Whichever language you use, you dig through the code deep enough, hooping through the FFI fence, you will see the code something similar to this. We can go on and on about this, but thats for another day.
+
+<Linebreak/>
+
+## **Loom**
+
+Think of this `epoll` design as a loom. It takes a large spool of FDs and spits out a parseable data for you to read and act on. Once you have this data, then it is business as usual. You process the data and send the reponse back to the client.
+
+Hey wait? Sending a response to client?  Can we not ask epoll to write it for us?
+**_Yes, we can_**
+
+What about waiting on a timer till it expires? **_Yes, we can_**.
+
+How about waiting on a mutex lock, can it be off-loaded? **_Yes, we can_**. 
+
+This list goes on and on. But, we dont generally use epoll for all these in a typical software project. Why? Because it is damn hard to get it perfectly right.
+People would rather wait on a `syscall` than to introduce `epoll` and overcomplicate it. So, when the data comes out of the loom, you no longer need the `epoll`, it has done its work. 
+
+But what if there is a sophisticated and ergonomic way to introduce `epoll` design in to your code? A bigger loom where you feed spools back into it when you want to yet keeping your codebase sane and simple.
+
+<Linebreak/>
+
+## **Async Runtime is your answer**
+
+We use fancy words like _Async_ to keep the uninformed away and confused. Async Runtime is simply an abstraction that gives you complete access to the underlying _Selector_.
+
+You might have seen this keyword `await` often thrown around in a language. Thats literally the user registering an event with the _Selector_, all hard things abstracted away.
+These languages are designed in such a away that the execution is suspended in this `await` point until the _Selector_ notifies that the event is finished waiting (analogous to data arriving through an FD).
+
+<Image src="/sansio/user-selector.png" height="300" width="300"/>
+
+This opens up a brand new paradigm of programming. Any line of code that needs waiting, you slap it with an `await` and it goes straight to the _Selector_.
+All of a sudden, your threads are happy, they are always executing something instead of waiting on a lock or on a file to be read from disk.
+
+<Linebreak/>
+
+## **Protocols & Async**
+
+As it turns out, protocols with lots of IO (think of HTTP / QUIC) really performs well in this Async model. It is quite obvious because we offloaded all the
+blocking syscalls to the _Selector_. We utilize every curve of that CPU cycle enforcing our logic instead of waiting on some IO.
+
+Using Async runtime has shortcomings too. The major one is, once you enter the Async paradigm, it is hard to expose your library to other languages.
+
+Why? Because the language that you expose the library
+may not understand the Async underpinnings of your code. It may expect a value the moment it calls your function.
+You have no choice but adhere to it by making _blocking calls_ to your functions defeating
+the whole purpose of choosing Async in the first place.
+
+Meh, who exposes their library to other languages? A lot of them, especially open source projects. It is incredibly useful if your library can be adapted across
+languages without any major changes in your code base. It makes a lof of developer lives easier.
+
+<Linebreak/>
+
+## **Decoupling Protocol Logic & IO**
+
+One of the best way to overcome this shortcoming is to implement your library based on Sans-IO design. Sans-IO simply means **_without IO_**.
+
+How do people write code with IO? Well, thats not the literal meaning. Let me explain.
+
+When you write your code in the Async world, you might be tempted to throw your protocol, business logic and your application implementation all under a single code base.
+Sans-IO techniqueu simply involves decoupling of the protocol layer from others void of Async and IO. Your protocol layer simply becomes a state machine that feeds on the IO
+you give and spits out events for you to act on. 
+
+<Image src="/sansio/statemachine.png" height="300" width="300"/>
+
+Let's suppose you are writing an HTTP library, in SansIO model, you will feed the bytes read from the socket to a HTTP State Machine, it parses the raw bytes, converts it
+in to a valid _HTTPRequest_ object and spits it out.
+
+<Image src="/sansio/http-state-machine.png" height="300" width="300"/>
+
+Now your business logic decides what to do with this _HTTPRequest_. You draft an appropriate _HTTPResponse_ and feed it to the state machine and out comes the raw bytes to be
+dispatched to the client.
+
+<Image src="/sansio/http-response.png" height="300" width="300"/>
+
+Notice that as a user you only applied your business logic, all the complex protocol stuff are offloaded to the state machine.
+<Linebreak/>
+
+## **Why should you use SansIO?**
+
+### **Universal Adoption**
+You write the state machine once and it can be compiled and repackage across all platforms. How? Because it is devoid of any async stuff, selectors, IO. It is a loom you can take anywhere from
+RaspberryPi to iPhones.
+
+### **Resuability**
+You don't like how the business logic is implemented in a project? Perhaps you want to write your own library with your custom needs. It is easy to quickly roll out your own flavour of library
+by simply extending the protocl state machine.
+
+<Linebreak/>
+
+## **Endnotes**
+Many of the OSS projects that has adopted this technique have been a great success. To name a few,
+
+<List type="list-decimal">
+  <li> <Link href="https://github.com/quinn-rs/quinn" title="quinn"/> - QUIC protocol </li>
+  <li> <Link href="https://github.com/algesten/str0m" title="str0m"/> - WebRTC stack </li>
+  <li> <Link href="https://github.com/hyperium/h2" title="hyper-h2"/> - HTTP protocol </li>
+  <li> <Link href="https://github.com/matrix-nio/matrix-nio" title="matric-nio"/> - Matrix (decentralized communication) client library. </li>
+</List>
