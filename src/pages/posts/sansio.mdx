@@ -108,7 +108,7 @@ languages without any major changes in your code base. It makes a lof of develop
 
 One of the best way to overcome this shortcoming is to implement your library based on Sans-IO design. Sans-IO simply means **_without IO_**.
 
-How do people write code with IO? Well, thats not the literal meaning. Let me explain.
+How do people write code without IO? Well, thats not the literal meaning. Let me explain.
 
 When you write your code in the Async world, you might be tempted to throw your protocol, business logic and your application implementation all under a single code base.
 Sans-IO technique simply involves decoupling of the protocol layer from others void of Async and IO. Your protocol layer simply becomes a state machine that feeds on the IO
