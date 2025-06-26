@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik+Microbe&display=swap');
 @import "tailwindcss";
 
 body {
@@ -11,6 +12,10 @@ body {
 * {
     font-family:
         "Cousine Nerd Font", "Cousine", monospace, system-ui, sans-serif;
+}
+
+h1 {
+    /* font-family : "Rubik Microbe", system-ui, monospace, sans-serif */
 }
 
 /* Mobile-first responsive improvements */
